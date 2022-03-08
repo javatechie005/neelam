@@ -1,9 +1,16 @@
 package FeedTestCases;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.testng.Assert;
+import org.testng.ITestResult;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -13,6 +20,8 @@ import com.aventstack.extentreports.Status;
 import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
 
 import java.io.File;
+
+import Utilities.GetScreenShot;
 import Utilities.ProjectConfigurations;
 
 import jxl.Workbook;
@@ -20,7 +29,16 @@ import jxl.read.biff.BiffException;
 import jxl.Sheet;
 import jxl.Cell;
 
+import org.apache.commons.io.FileUtils;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 
 
 public class First_Dummy_Class {
@@ -32,63 +50,93 @@ String TestDataSheetPath  ;
 String TestSheetName;
 String UserName;
 String Password;
-
-
+WebDriver driver;
+String browser;
+String UserName1; 
+ExtentHtmlReporter htmlReporter;
+ExtentReports extent;
+ExtentTest logger;
+Date date;   
 
 	
-	@BeforeTest	
+	@BeforeSuite	
 	public void setup() throws IOException {
 		
 		System.out.println("setup Method ");
 		runEnv=ProjectConfigurations.LoadProperties("RunEnv");
 		
-		//TestDataSheetPath=ProjectConfigurations.LoadProperties("TestDataSheetPath");
+		
 		TestDataSheetPath= System.getProperty("user.dir") + "//TestData//DriverExcel.xls" ;
 		TestSheetName =ProjectConfigurations.LoadProperties("TestSheetName");
-		String UserName; 
+		browser = ProjectConfigurations.LoadProperties("browser");
+		
+		
+	    if(browser.equalsIgnoreCase("chrome")) {
+	    	WebDriverManager.chromedriver().setup();
+			driver = new ChromeDriver();
+	    	
+	    }
+	    else if (browser.equalsIgnoreCase("firefox"))
+		
+	    {
+	    	WebDriverManager.firefoxdriver().setup();
+			WebDriver driver = new FirefoxDriver();
+	    }
+	    
+	    else if (browser.equalsIgnoreCase("edge")) {
+	    	
+	    	
+	    	WebDriverManager.edgedriver().setup();
+	    	WebDriver driver = new EdgeDriver();
+	    }
+		
+    
+	//**************Test Result Path and Extent Reports  **********************************************
+		
+		String fileSuffix = new SimpleDateFormat("yyyy_MM_dd_HHmmss").format(new Date()) +".html";
+		htmlReporter = new ExtentHtmlReporter(System.getProperty("user.dir") +"/Logs/testReport"+fileSuffix);
+		extent = new ExtentReports();
+		extent.attachReporter(htmlReporter);
+		logger = extent.createTest("MyFirstTest", "Sample description");
+		   
 	}
-    
-	//**********************Extent Report ************************
 	
-	//builds a new report using the html template 
-    ExtentHtmlReporter htmlReporter;
+@AfterSuite
+public void tearDown() throws IOException {
+	
+	driver.quit();
+	extent.flush();
+	
+}
+	
+
+
+
+@AfterMethod
+public void getResult(ITestResult result) throws IOException
+{
+    if(result.getStatus() == ITestResult.FAILURE)
+    {
+        String screenShotPath = GetScreenShot.capture(driver, "screenShotName");
+        //logger.log(Status.FAIL, result.getThrowable());
+        logger.log(Status.FAIL, "Snapshot below: " + logger.addScreenCaptureFromPath(screenShotPath));
+    }
     
-    ExtentReports extent;
-    //helps to generate the logs in test report.
-    ExtentTest test;
-    
+}
+ 
 	
 	
 	
 	 
-	@Test
+@Test
 	public  void test() throws IOException {
 		// TODO Auto-generated method stub
 		
-		//*******************************************************************************
-		
-		
-		htmlReporter = new ExtentHtmlReporter(System.getProperty("user.dir") +"/Logs/testReport.html");
+	
 
-		//initialize ExtentReports and attach the HtmlReporter
-		extent = new ExtentReports();
-		extent.attachReporter(htmlReporter);
-
-		//To add system or environment info by using the setSystemInfo method.
-		
-		  ExtentTest logger = extent.createTest("MyFirstTest", "Sample description");
-
-	        // log(Status, details)
+	    
 		  logger.log(Status.INFO, "This step shows usage of log(status, details)");
-
-	        // info(details)
-		  logger.info("This step shows usage of info(details)");
-		  
-		
-		System.out.println("Om Naamaah Shivaay ");
-		
-		System.out.println(runEnv);
-		System.out.println(ChromeDriverPath);
+         
 		
 		
 		//************************************
@@ -139,9 +187,13 @@ String Password;
 						   
 						   System.out.println("UserName: " + UserName);
 						   System.out.println("Password : " + Password);
+						   
+						  
+						  
+						   test1(driver,logger);
+						  
+		
 					   }
-					   
-					   
 					   
 					   
 				   }
@@ -154,9 +206,27 @@ String Password;
 				e.printStackTrace();
 			}
 		
-			extent.flush();
+			
 		
 
 	}
 
+
+@Test
+public  void test1(WebDriver driver,ExtentTest logger ) {
+	
+	System.out.println("Executed Test1");
+	 
+	 driver.get("https://www.seleniumeasy.com/selenium-tutorials/manage-webdriverdriver-executables-using-webdrivermanager");
+	String expectedTitle = driver.getTitle();
+	
+	String originalTitle = "Dummy";
+	Assert.assertEquals(originalTitle, expectedTitle);
+	
+}
+	
+		 
+	
+
+	
 }
